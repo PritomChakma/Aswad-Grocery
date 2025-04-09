@@ -1,7 +1,21 @@
 import React from 'react';
 import { FaShoppingCart, FaUserCircle } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from "../authen/auth";
+import {Link} from "react-router-dom";
 
 const Navbar = () => {
+    const navigate = useNavigate();
+
+    const {isAuthorized, logout} = useAuth();
+
+
+    const handleLogout = () => {
+        logout();
+        navigate('/');
+    };
+
+
   return (
     <div className="navbar bg-[#1b8057] shadow-md sticky top-0 z-50 px-4">
       {/* Logo */}
@@ -65,7 +79,22 @@ const Navbar = () => {
             <li><a className="hover:bg-[#1b8057] hover:text-white">Profile</a></li>
             <li><a className="hover:bg-[#1b8057] hover:text-white">Orders</a></li>
             <li><a className="hover:bg-[#1b8057] hover:text-white">Settings</a></li>
-            <li><a className="hover:bg-[#1b8057] hover:text-white">Logout</a></li>
+            {isAuthorized ? (
+                    <>
+                        <li>
+                            <button onClick={handleLogout} className="button-link">Logout</button>
+                        </li>
+                    </>
+                ) : (
+                    <>
+                        <li>
+                            <Link to="/login" className="button-link-login">Log In</Link>
+                        </li>
+                        <li>
+                            <Link to="/register" className="button-link">Register</Link>
+                        </li>
+                    </>
+                )}
           </ul>
         </div>
       </div>
