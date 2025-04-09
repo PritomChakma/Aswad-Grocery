@@ -1,13 +1,14 @@
 import React from "react";
 import { Navigate } from "react-router-dom";    
 import { useAuth } from "../authen/auth";  
+import Loading from "../Shared/Loading";
 
 
 function ProtectedRoute({children}) {
     const {isAuthorized} = useAuth();
 
     if (isAuthorized === null) {
-        return <div>Loading...........</div>
+        return <Loading></Loading>
     }
 
     if (

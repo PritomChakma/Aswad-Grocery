@@ -1,100 +1,103 @@
 /* AuthForm.css */
 
 .form-container {
-    background-color: white;
-    padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    padding: 40px 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
     max-width: 400px;
-    width: 100%;
-    margin-left: 430px;
-    margin-top: 70px;
+    width: 90%;
+    margin: 80px auto;
+    transition: all 0.3s ease;
 }
 
 .form {
     display: flex;
     flex-direction: column;
-    
 }
 
 .form h2 {
-    margin-bottom: 20px;
-    color: #333;
+    margin-bottom: 24px;
+    color: #1f2937; /* Darker text */
+    font-size: 24px;
+    font-weight: 600;
     text-align: center;
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 5px;
-    color: #333;
+    margin-bottom: 8px;
+    color: #374151; /* Slightly lighter dark */
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .form-group input {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: #f9fafb;
+    font-size: 14px;
+    transition: border-color 0.3s, box-shadow 0.3s;
     outline: none;
 }
 
-
 .form-group input:focus {
-    border-color: #3D56FF; 
-    box-shadow: 0 0 0 2px rgba(61, 86, 255, 0.2); 
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    background-color: #fff;
 }
 
 .form-button {
-    padding: 10px 15px;
-    background-color: #3D56FF;
+    padding: 12px;
+    background-color: #3b82f6;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     color: white;
-    font-weight: bold;
+    font-size: 16px;
+    font-weight: 600;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
 .form-button:hover {
-    background-color: #2c44cc;
+    background-color: #2563eb;
 }
 
 .toggle-text {
     text-align: center;
-    margin-top: 15px;
-    color: #666;
+    margin-top: 20px;
+    color: #6b7280;
+    font-size: 14px;
 }
 
 .toggle-link {
-    color: #3D56FF;
+    color: #3b82f6;
+    font-weight: 600;
     cursor: pointer;
-    font-weight: bold;
 }
-
-
-
 
 .loading-indicator {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100px; /* Adjust the height as needed */
-    background-color: rgba(255, 255, 255, 0.8);
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    height: 80px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
     margin-top: 20px;
-    position: relative;
 }
 
 .spinner {
-    width: 30px;
-    height: 30px;
-    border: 4px solid rgba(0, 0, 0, 0.1);
-    border-top: 4px solid #000;
+    width: 28px;
+    height: 28px;
+    border: 3px solid rgba(0, 0, 0, 0.1);
+    border-top: 3px solid #3b82f6;
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -105,31 +108,34 @@
 }
 
 .success-message {
-    color: green;
+    color: #16a34a;
+    text-align: center;
     margin-bottom: 1rem;
 }
 
 .error-message {
-    color: red;
+    color: #dc2626;
     text-align: center;
-    margin: 5px;
+    margin: 5px 0;
 }
 
 .google-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: white;
+    background-color: #ffffff;
     color: #4285F4;
     border: 1px solid #4285F4;
-    padding: 10px;
-    border-radius: 5px;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
     cursor: pointer;
-    margin-top: 10px;
+    transition: background-color 0.3s;
+    margin-top: 15px;
 }
 
 .google-button:hover {
-    background-color: #f1f1f1;
+    background-color: #f3f4f6;
 }
 
 .google-icon {
@@ -138,16 +144,23 @@
     margin-right: 10px;
 }
 
-
+/* Responsive */
 @media (max-width: 768px) {
     .form-container {
-        padding: 20px;
-        margin: 0;
-        margin-left: 115px;
-        margin-top: 60px;
+        margin: 50px auto;
+        padding: 30px 20px;
+    }
+
+    .form h2 {
+        font-size: 22px;
     }
 
     .form-button {
-        padding: 8px 12px;
+        padding: 10px;
+        font-size: 15px;
+    }
+
+    .google-button {
+        padding: 10px;
     }
 }
