@@ -96,7 +96,7 @@ const Navbar = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/orders" className="hover:bg-[#1b8057] hover:text-white p-2 flex items-center">
+                <Link to="/order" className="hover:bg-[#1b8057] hover:text-white p-2 flex items-center">
                   <FaShoppingCart className="mr-2 text-xl" />
                   Orders
                 </Link>

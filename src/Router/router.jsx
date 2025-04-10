@@ -1,13 +1,16 @@
 import { createBrowserRouter } from "react-router-dom";
 import RedirectGoogleAuth from "../Components/GoogleRedirectHandler";
+import Order from "../Components/Oder/Order";
 import ErrorElement from "../Error/ErrorElement";
 import MainLayout from "../Layout/mainLayout";
 import Dashboard from "../Page/Dashboard/Dashboard";
+import TotalProduct from "../Page/Dashboard/TotalProduct";
 import User from "../Page/Dashboard/user";
 import Home from "../Page/Home";
 import ProtectedLogin from "../routes/ProtectedLogin";
 import ProtectedRegister from "../routes/ProtectedRegister";
-import TotalProduct from "../Page/Dashboard/TotalProduct";
+import Categories from "../Page/Dashboard/Categories";
+import AddProduct from "../Page/Dashboard/AddProduct";
 
 const router = createBrowserRouter([
   {
@@ -19,16 +22,15 @@ const router = createBrowserRouter([
       { path: "/login", element: <ProtectedLogin /> },
       { path: "/register", element: <ProtectedRegister /> },
       { path: "/login/callback", element: <RedirectGoogleAuth /> },
-      { path: "totalUser", element: <User /> }, 
-      { path: "totalProducts", element: <TotalProduct></TotalProduct> }, 
+      { path: "/totalProducts", element: <TotalProduct /> },
+      { path: "/addProduct", element: <AddProduct /> },
+      { path: "/order", element: <Order></Order> },
+      { path: "/categories", element: <Categories></Categories> },
+      { path: "/totalUser", element: <User /> },
       {
-        path: "/dashboard", // Parent route
+        path: "/dashboard",
         element: <Dashboard />,
-        children: [
-          // Relative route to /dashboard
-        
-        
-        ],
+        children: [{ path: "totalUser", element: <User /> }],
       },
     ],
   },

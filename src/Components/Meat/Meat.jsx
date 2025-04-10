@@ -61,15 +61,15 @@ const Meat = () => {
               <p className="text-lg font-bold text-[#1b8057] mb-4">{meat.price}</p>
 
               {/* Button Section */}
-              <div className="flex flex-col space-y-2">
+              <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0">
                 {/* Shop Now Button */}
-                <button className="w-full py-2 px-3 bg-[#1b8057] text-white rounded-lg hover:bg-[#166644] transition duration-300 flex items-center justify-center text-xs">
+                <button className="w-full sm:w-auto py-2 px-3 bg-[#1b8057] text-white rounded-lg hover:bg-[#166644] transition duration-300 flex items-center justify-center text-xs">
                   <FaShoppingBag className="mr-2" />
                   Shop Now
                 </button>
 
                 {/* Add to Cart Button */}
-                <button className="w-full py-2 px-3 bg-gray-200 text-[#1b8057] rounded-lg hover:bg-gray-300 transition duration-300 flex items-center justify-center text-xs">
+                <button className="w-full sm:w-auto py-2 px-3 bg-gray-200 text-[#1b8057] rounded-lg hover:bg-gray-300 transition duration-300 flex items-center justify-center text-xs">
                   <FaShoppingCart className="mr-2" />
                   Add to Cart
                 </button>

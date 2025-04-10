@@ -13,6 +13,9 @@ const TotalProduct = () => {
         </svg>
       </div>
     </div>
+
+
+    
   );
 };
 

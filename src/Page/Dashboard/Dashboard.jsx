@@ -1,8 +1,28 @@
-import React from "react";
+import React, { useState, useEffect } from "react"; // ✅ You must import useState and useEffect
 import { FaBox, FaClipboardList, FaShoppingCart, FaUsers } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import api from "../../js/api";
+
+const API_URL = "/product/categories/";
 
 const Dashboard = () => {
+  const [categories, setCategories] = useState([]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get(API_URL);
+      setCategories(res.data);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []); // ✅ This will call fetchCategories once when component loads
+
+  const totalCategories = categories.length; // ✅ Save it in a variable
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
       {/* Dashboard Header */}
@@ -40,8 +60,8 @@ const Dashboard = () => {
             {
               icon: <FaClipboardList className="text-5xl text-[#1b8057]" />,
               title: "Total Categories",
-              count: 15,
-              link: "/admin/categories",
+              count: totalCategories, // ✅ Use the variable here (NOT inside {})
+              link: "/categories",
               linkText: "View Categories",
             },
           ].map((item, index) => (
@@ -68,11 +88,10 @@ const Dashboard = () => {
         <div className="mt-12">
           <h2 className="text-2xl font-bold text-gray-700 mb-6 text-center">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Action Item */}
             {[
               {
                 title: "Add New Product",
-                link: "/admin/products/new",
+                link: "/addProduct",
                 button: "Add Product",
               },
               {
