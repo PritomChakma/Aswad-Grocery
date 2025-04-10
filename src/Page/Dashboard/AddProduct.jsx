@@ -1,369 +1,499 @@
+// src/components/AddProduct.js
 import React, { useState, useEffect } from "react";
+// Make sure this path is correct for your project structure
 import api from "../../js/api";
 
-const API_URL = "/product/products/";
+// Define API endpoint constants based on Django urls.py
+const PRODUCT_URL = "/product/products/";
+const IMAGE_URL = "/product/images/";
+const ATTRIBUTE_URL = "/product/attributes/";
 const CATEGORY_URL = "/product/categories/";
-const BRAND_URL = "/product/brands/";
+
+// --- Helper Function to Generate Slugs ---
+const slugify = (str) =>
+  str
+    .toLowerCase() // Convert to lowercase
+    .trim() // Remove leading/trailing whitespace
+    .replace(/[^\w\s-]/g, '') // Remove non-word characters (letters, numbers, underscore), excluding spaces and hyphens
+    .replace(/[\s_-]+/g, '-') // Replace spaces, underscores, or hyphens with a single hyphen
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
 
 const AddProduct = () => {
-  const [categories, setCategories] = useState([]);
-  const [brands, setBrands] = useState([]);
-  const [subCategories, setSubCategories] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
+  // --- State Variables ---
+
+  // State for the main product details, including slug
+  const [productData, setProductData] = useState({
     name: "",
     slug: "",
     description: "",
-    short_description: "",
-    brand: "",
-    category: "",
-    sub_category: "",
-    price: "",
-    discount_price: "",
-    currency: "USD",
-    stock_quantity: "",
-    sku: "",
-    barcode: "",
+    category: "", 
+    stock_quantity: 0,
     is_active: true,
     is_featured: false,
   });
 
+  // State to hold the list of images to be uploaded
+  const [images, setImages] = useState([]);
+  // State for the image currently being added by the user
+  const [currentImage, setCurrentImage] = useState({
+    file: null,
+    alt_text: "",
+    is_main: false,
+  });
+
+  // State to hold the list of attributes (variants) to be added
+  const [attributes, setAttributes] = useState([]);
+  // State for the attribute currently being added by the user
+  const [currentAttribute, setCurrentAttribute] = useState({
+    name: "",
+    value: "",
+    price: "",
+  });
+
+  // State for dropdown options
+  const [categories, setCategories] = useState([]);
+
+  // State for UI feedback
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null); // Stores error messages
+  const [success, setSuccess] = useState(null); // Stores success messages
+
+  // --- Fetch Initial Data (Categories only) ---
   useEffect(() => {
-    const fetchOptions = async () => {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const [catRes, brandRes] = await Promise.all([
-          api.get(CATEGORY_URL),
-          api.get(BRAND_URL),
-        ]);
-        setCategories(catRes.data);
-        setBrands(brandRes.data);
+        const categoriesRes = await api.get(CATEGORY_URL);
+        setCategories(categoriesRes.data);
       } catch (err) {
-        console.error("Error fetching options:", err);
+        console.error("Error fetching categories:", err);
+        setError("Failed to load necessary data (categories). Please try again later.");
+      } finally {
+          setLoading(false);
       }
     };
-    fetchOptions();
+    fetchData();
   }, []);
 
-  const handleChange = (e) => {
+  // --- Handlers for Product Details ---
+  // Updated to automatically generate slug when name changes
+  const handleProductChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
+    const newProductData = {
+      ...productData,
       [name]: type === "checkbox" ? checked : value,
-    }));
+    };
 
-    if (name === "category") {
-      const selectedCategory = categories.find((cat) => cat.id === parseInt(value));
-      setSubCategories(selectedCategory?.sub_categories || []);
-      setFormData((prev) => ({
-        ...prev,
-        sub_category: "",
-        category: value,
-      }));
+    // If the name field was changed, update the slug automatically
+    if (name === "name") {
+      newProductData.slug = slugify(value);
+    }
+
+    setProductData(newProductData);
+    console.log("Product Data Updated:", newProductData);
+  };
+
+  // --- Handlers for Images ---
+  const handleCurrentImageChange = (e) => {
+    const { name, value, type, checked, files } = e.target;
+    if (type === "file") {
+      setCurrentImage({ ...currentImage, file: files[0] });
+    } else {
+      setCurrentImage({
+        ...currentImage,
+        [name]: type === "checkbox" ? checked : value,
+      });
     }
   };
 
+  const addImage = () => {
+    if (!currentImage.file || !currentImage.alt_text) {
+      alert("Please provide an image file and its alt text.");
+      return;
+    }
+    const newImage = { ...currentImage, id: Date.now() };
+    let updatedImages = [...images];
+    if (newImage.is_main) {
+        updatedImages = updatedImages.map(img => ({ ...img, is_main: false }));
+    }
+    setImages([...updatedImages, newImage]);
+    setCurrentImage({ file: null, alt_text: "", is_main: false });
+    const fileInput = document.getElementById('image-file-input');
+    if (fileInput) fileInput.value = "";
+  };
+
+  const removeImage = (idToRemove) => {
+    setImages(images.filter((img) => img.id !== idToRemove));
+  };
+
+   const toggleMainImage = (idToToggle) => {
+    setImages(images.map(img => ({
+        ...img,
+        is_main: img.id === idToToggle
+    })));
+  };
+
+
+  // --- Handlers for Attributes ---
+  const handleCurrentAttributeChange = (e) => {
+    const { name, value } = e.target;
+    setCurrentAttribute({ ...currentAttribute, [name]: value });
+  };
+
+  const addAttribute = () => {
+    if (!currentAttribute.name || !currentAttribute.value || currentAttribute.price === "") {
+      alert("Please fill in all attribute fields (Name, Value, Price).");
+      return;
+    }
+    setAttributes([...attributes, { ...currentAttribute, id: Date.now() }]);
+    setCurrentAttribute({ name: "", value: "", price: "" });
+  };
+
+  const removeAttribute = (idToRemove) => {
+    setAttributes(attributes.filter((attr) => attr.id !== idToRemove));
+  };
+
+  // --- Form Submission ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+
+    // --- Frontend Validation ---
+    // Slug is auto-generated, but ensure name is present which drives the slug
+    if (!productData.name || !productData.category || productData.stock_quantity < 0 ) {
+        setError("Please fill in all required product fields (Name, Category, Stock >= 0).");
+        setLoading(false);
+        return;
+    }
+     if (images.length === 0) {
+        setError("Please add at least one product image.");
+        setLoading(false);
+        return;
+    }
+    if (!images.some(img => img.is_main)) {
+        setError("Please mark one image as the main image.");
+        setLoading(false);
+        return;
+    }
+
+    let createdProductId = null;
+
     try {
-      await api.post(API_URL, formData);
-      alert("Product added successfully!");
-      setFormData({
-        name: "",
-        slug: "",
-        description: "",
-        short_description: "",
-        brand: "",
-        category: "",
-        sub_category: "",
-        price: "",
-        discount_price: "",
-        currency: "USD",
-        stock_quantity: "",
-        sku: "",
-        barcode: "",
-        is_active: true,
-        is_featured: false,
+      // --- Step 1: Create the Product ---
+      // The productPayload now implicitly includes the generated slug
+      const productPayload = {
+        ...productData,
+        category: parseInt(productData.category, 10),
+        stock_quantity: parseInt(productData.stock_quantity, 10),
+      };
+      console.log("Submitting Product Data:", productPayload);
+      const productRes = await api.post(PRODUCT_URL, productPayload);
+      createdProductId = productRes.data.id;
+      console.log("Product Created Successfully, ID:", createdProductId);
+
+      // --- Step 2: Create Images ---
+      const imagePromises = images.map((img, index) => {
+        const formData = new FormData();
+        formData.append("product", createdProductId);
+        formData.append("image", img.file);
+        formData.append("alt_text", img.alt_text);
+        formData.append("is_main", img.is_main);
+        formData.append('position', index);
+        console.log(`Submitting Image ${index + 1}:`, { product: createdProductId, alt_text: img.alt_text, is_main: img.is_main, position: index });
+        return api.post(IMAGE_URL, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
       });
+
+      // --- Step 3: Create Attributes ---
+      const attributePromises = attributes.map((attr, index) => {
+        const attributePayload = {
+          product: createdProductId,
+          name: attr.name,
+          value: attr.value,
+          price: parseFloat(attr.price).toFixed(2),
+        };
+        console.log(`Submitting Attribute ${index + 1}:`, attributePayload);
+        return api.post(ATTRIBUTE_URL, attributePayload);
+      });
+
+      // --- Step 4: Wait for uploads ---
+      await Promise.all([...imagePromises, ...attributePromises]);
+      console.log("Images and Attributes Submitted Successfully");
+
+      setSuccess(`Product "${productRes.data.name}" (ID: ${createdProductId}) created successfully!`);
+
+      // --- Step 5: Reset the form ---
+      setProductData({
+        name: "", slug: "", description: "", category: "", stock_quantity: 0, is_active: true, is_featured: false, // Added slug reset
+      });
+      setImages([]);
+      setCurrentImage({ file: null, alt_text: "", is_main: false });
+      setAttributes([]);
+      setCurrentAttribute({ name: "", value: "", price: "" });
+       const fileInput = document.getElementById('image-file-input');
+       if (fileInput) fileInput.value = "";
+
     } catch (err) {
-      console.error("Error adding product:", err.response?.data || err);
-      alert("Failed to add product. Check console for details.");
+        // --- Error Handling ---
+        console.error("Error during product creation process:", err.response?.data || err.message || err);
+        let errorMessage = "Failed to create product.";
+        if (err.response?.data) {
+             errorMessage = Object.entries(err.response.data)
+                .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+                .join(' | ');
+        } else if (err.message) {
+            errorMessage = err.message;
+        }
+         if (createdProductId && !success) {
+             errorMessage += ` Product (ID: ${createdProductId}) was created, but some images or attributes might have failed to upload. Please check the product details.`;
+         }
+         setError(errorMessage);
+
     } finally {
-      setIsSubmitting(false);
+      // --- Final Step: Stop Loading ---
+      setLoading(false);
     }
   };
 
+  // --- JSX ---
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
-      <div className="border-b border-gray-200 pb-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Add New Product</h1>
-        <p className="text-gray-600">Fill out the form to add a new product to your store</p>
-      </div>
+    <div className="max-w-4xl mx-auto p-6 bg-gray-50 rounded-lg shadow-xl my-8 font-sans">
+      {/* Updated title text color */}
+      <h1 className="text-3xl font-bold mb-8 text-center text-gray-900 border-b pb-4">
+        Add New Product
+      </h1>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column */}
-          <div className="space-y-6">
+      {/* Display Loading, Error, or Success Messages */}
+      {loading && <div className="text-center text-blue-600 p-3">Processing...</div>}
+      {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">{error}</div>}
+      {success && <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">{success}</div>}
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+
+        {/* === Product Details Section === */}
+        <fieldset className="border p-5 rounded-lg shadow-sm bg-white transition-shadow hover:shadow-md">
+           {/* Updated legend text color */}
+          <legend className="text-xl font-semibold px-2 text-gray-900 mb-4">Product Details</legend>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             {/* Product Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
+               {/* Updated label text color */}
+              <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-1">Name <span className="text-red-500">*</span></label>
               <input
-                type="text"
-                name="name"
-                placeholder="e.g. Premium Wireless Headphones"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                required
+                type="text" id="name" name="name"
+                value={productData.name} onChange={handleProductChange}
+                className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" required
               />
             </div>
-
-            {/* Slug */}
+            {/* Slug (Auto-generated & Read-only) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Slug *</label>
+               {/* Updated label text color */}
+              <label htmlFor="slug" className="block text-sm font-medium text-gray-900 mb-1">Slug (auto-generated)</label>
               <input
-                type="text"
-                name="slug"
-                placeholder="e.g. premium-wireless-headphones"
-                value={formData.slug}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                required
+                type="text" id="slug" name="slug"
+                value={productData.slug}
+                readOnly // Make it read-only
+                className="w-full border border-gray-300 p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-0 text-gray-500 cursor-not-allowed" // Style as read-only
               />
             </div>
-
-            {/* Short Description */}
+             {/* Stock Quantity */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Short Description *</label>
+               {/* Updated label text color */}
+              <label htmlFor="stock_quantity" className="block text-sm font-medium text-gray-900 mb-1">Stock Quantity <span className="text-red-500">*</span></label>
+              <input
+                type="number" id="stock_quantity" name="stock_quantity" min="0"
+                value={productData.stock_quantity} onChange={handleProductChange}
+                className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" required
+              />
+            </div>
+            {/* Category Selection */}
+            <div>
+               {/* Updated label text color */}
+              <label htmlFor="category" className="block text-sm font-medium text-gray-900 mb-1">Category <span className="text-red-500">*</span></label>
+              <select
+                id="category" name="category" value={productData.category} onChange={handleProductChange}
+                className="w-full border border-gray-300 p-2 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" required
+              >
+                <option value="">-- Select Category --</option>
+                {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+              </select>
+            </div>
+             {/* Product Description */}
+            <div className="md:col-span-2">
+               {/* Updated label text color */}
+              <label htmlFor="description" className="block text-sm font-medium text-gray-900 mb-1">Description</label>
               <textarea
-                name="short_description"
-                placeholder="Brief description that appears in product listings"
-                value={formData.short_description}
-                onChange={handleChange}
-                rows="3"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                required
-              />
+                id="description" name="description" value={productData.description} onChange={handleProductChange}
+                rows="4"
+                className="w-full border border-gray-300 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
+                placeholder="Enter a detailed description of the product..."
+              ></textarea>
+            </div>
+            {/* Status Checkboxes */}
+            <div className="md:col-span-2 flex items-center gap-6 pt-2">
+               {/* Updated label text color */}
+              <label htmlFor="is_active" className="flex items-center gap-2 text-sm font-medium text-gray-900 cursor-pointer">
+                <input type="checkbox" id="is_active" name="is_active" checked={productData.is_active} onChange={handleProductChange} className="rounded h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"/> Active
+              </label>
+               {/* Updated label text color */}
+              <label htmlFor="is_featured" className="flex items-center gap-2 text-sm font-medium text-gray-900 cursor-pointer">
+                <input type="checkbox" id="is_featured" name="is_featured" checked={productData.is_featured} onChange={handleProductChange} className="rounded h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"/> Featured
+              </label>
+            </div>
+          </div>
+        </fieldset>
+
+        {/* === Image Upload Section === */}
+        <fieldset className="border p-5 rounded-lg shadow-sm bg-white transition-shadow hover:shadow-md">
+            {/* Updated legend text color */}
+           <legend className="text-xl font-semibold px-2 text-gray-900 mb-4">Product Images <span className="text-red-500">*</span></legend>
+            {/* Input fields for adding a new image */}
+            <div className="flex flex-col sm:flex-row gap-4 items-end mb-6 p-4 border rounded-md bg-gray-50">
+                 {/* File Input */}
+                 <div className="flex-grow w-full sm:w-auto">
+                     {/* Updated label text color */}
+                    <label htmlFor="image-file-input" className="block text-sm font-medium text-gray-900 mb-1">Image File <span className="text-red-500">*</span></label>
+                    <input
+                        type="file" id="image-file-input" name="file"
+                        onChange={handleCurrentImageChange}
+                        accept="image/png, image/jpeg, image/gif, image/webp" // Specify accepted types
+                        className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                     />
+                 </div>
+                 {/* Alt Text Input */}
+                 <div className="flex-grow w-full sm:w-auto">
+                      {/* Updated label text color */}
+                     <label htmlFor="alt_text" className="block text-sm font-medium text-gray-900 mb-1">Alt Text <span className="text-red-500">*</span></label>
+                     <input
+                        type="text" name="alt_text" placeholder="Describe the image"
+                        value={currentImage.alt_text} onChange={handleCurrentImageChange}
+                        className="w-full border border-gray-300 p-2 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
+                     />
+                 </div>
+                 {/* Main Image Checkbox */}
+                 <div className="flex items-center pt-5 whitespace-nowrap">
+                     <input type="checkbox" name="is_main" id="is_main_current" checked={currentImage.is_main} onChange={handleCurrentImageChange} className="rounded mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"/>
+                      {/* Updated label text color */}
+                     <label htmlFor="is_main_current" className="text-sm font-medium text-gray-900 cursor-pointer">Set as Main?</label>
+                 </div>
+                 {/* Add Image Button */}
+                 <button type="button" onClick={addImage} className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-md text-sm font-semibold transition duration-150 ease-in-out shadow-sm hover:shadow whitespace-nowrap w-full sm:w-auto">
+                    Add Image
+                 </button>
+             </div>
+
+             {/* List of added images */}
+             {images.length > 0 && (
+                <div className="space-y-3 mt-4">
+                    {/* Text color was already dark gray, leaving as is */}
+                    <h4 className="text-md font-semibold text-gray-600 mb-2 border-t pt-4">Added Images (Mark one as main):</h4>
+                    {images.map((img, index) => (
+                         <div key={img.id} className="flex items-center justify-between gap-3 p-3 border rounded-md bg-gray-50 hover:bg-gray-100 text-sm transition duration-150 ease-in-out">
+                             {/* Image Preview and Info */}
+                             <div className="flex items-center gap-3 overflow-hidden flex-grow">
+                                {img.file && <img src={URL.createObjectURL(img.file)} alt="Preview" className="w-12 h-12 object-cover rounded-md border"/>}
+                                <div className="flex flex-col overflow-hidden">
+                                    {/* Text color was already dark gray, leaving as is */}
+                                    <span className="font-medium text-gray-800 truncate flex-shrink min-w-0">{img.file?.name}</span>
+                                    <span className="text-gray-600 truncate flex-shrink min-w-0">Alt: {img.alt_text}</span>
+                                </div>
+                             </div>
+                             {/* Actions: Set Main / Remove */}
+                             <div className="flex items-center gap-4 flex-shrink-0">
+                                  {/* Text color depends on selection state, leaving as is */}
+                                 <label htmlFor={`main-${img.id}`} className={`flex items-center gap-1 cursor-pointer px-2 py-1 rounded ${img.is_main ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-200'}`}>
+                                    <input type="radio" id={`main-${img.id}`} name="main_image_selector" checked={img.is_main} onChange={() => toggleMainImage(img.id)} className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"/>
+                                    Main
+                                 </label>
+                                 {/* Remove button uses red text, leaving as is */}
+                                <button type="button" onClick={() => removeImage(img.id)} className="text-red-600 hover:text-red-800 font-semibold text-xs uppercase tracking-wide">Remove</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+             )}
+        </fieldset>
+
+        {/* === Attributes/Variants Section === */}
+        <fieldset className="border p-5 rounded-lg shadow-sm bg-white transition-shadow hover:shadow-md">
+             {/* Updated legend text color */}
+            <legend className="text-xl font-semibold px-2 text-gray-900 mb-4">Product Variants/Attributes</legend>
+            {/* Input fields for adding a new attribute */}
+             <div className="flex flex-col sm:flex-row gap-4 items-end mb-6 p-4 border rounded-md bg-gray-50">
+                {/* Attribute Name */}
+                <div className="flex-grow w-full sm:w-auto">
+                     {/* Updated label text color */}
+                    <label className="block text-sm font-medium text-gray-900 mb-1">Attribute Name <span className="text-red-500">*</span></label>
+                    <input
+                        type="text" name="name" placeholder="e.g., Size, Color"
+                        value={currentAttribute.name} onChange={handleCurrentAttributeChange}
+                        className="w-full border border-gray-300 p-2 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
+                     />
+                </div>
+                {/* Attribute Value */}
+                <div className="flex-grow w-full sm:w-auto">
+                     {/* Updated label text color */}
+                    <label className="block text-sm font-medium text-gray-900 mb-1">Attribute Value <span className="text-red-500">*</span></label>
+                    <input
+                        type="text" name="value" placeholder="e.g., Large, Red"
+                        value={currentAttribute.value} onChange={handleCurrentAttributeChange}
+                         className="w-full border border-gray-300 p-2 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
+                    />
+                </div>
+                {/* Attribute Price */}
+                <div className="flex-grow w-full sm:w-auto">
+                     {/* Updated label text color */}
+                    <label className="block text-sm font-medium text-gray-900 mb-1">Price <span className="text-red-500">*</span></label>
+                     <input
+                        type="number" name="price" placeholder="e.g., 99.99" step="0.01" min="0"
+                        value={currentAttribute.price} onChange={handleCurrentAttributeChange}
+                        className="w-full border border-gray-300 p-2 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
+                     />
+                </div>
+                {/* Add Attribute Button */}
+                <button type="button" onClick={addAttribute} className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-md text-sm font-semibold transition duration-150 ease-in-out shadow-sm hover:shadow whitespace-nowrap w-full sm:w-auto">
+                    Add Attribute
+                </button>
             </div>
 
-            {/* Brand */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Brand *</label>
-              <select
-                name="brand"
-                value={formData.brand}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                required
-              >
-                <option value="">Select Brand</option>
-                {brands.map((brand) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                required
-              >
-                <option value="">Select Category</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sub Category */}
-            {subCategories.length > 0 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category</label>
-                <select
-                  name="sub_category"
-                  value={formData.sub_category}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                >
-                  <option value="">Select Sub Category</option>
-                  {subCategories.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* List of added attributes */}
+             {attributes.length > 0 && (
+                <div className="space-y-3 mt-4">
+                     {/* Text color was already dark gray, leaving as is */}
+                    <h4 className="text-md font-semibold text-gray-600 mb-2 border-t pt-4">Added Attributes:</h4>
+                     {attributes.map((attr) => (
+                        <div key={attr.id} className="flex items-center justify-between gap-3 p-3 border rounded-md bg-gray-50 hover:bg-gray-100 text-sm transition duration-150 ease-in-out">
+                            {/* Attribute Info - Text colors were already dark gray, leaving as is */}
+                            <span className="font-medium text-gray-800">{attr.name}: {attr.value}</span>
+                            <span className="text-gray-600">(${parseFloat(attr.price || 0).toFixed(2)})</span>
+                            {/* Remove Button - uses red text, leaving as is */}
+                             <button type="button" onClick={() => removeAttribute(attr.id)} className="text-red-600 hover:text-red-800 font-semibold text-xs uppercase tracking-wide ml-auto pl-4">Remove</button>
+                        </div>
+                    ))}
+                </div>
             )}
-          </div>
+        </fieldset>
 
-          {/* Right Column */}
-          <div className="space-y-6">
-            {/* Price */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price *</label>
-              <div className="relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">$</span>
-                </div>
-                <input
-                  type="number"
-                  name="price"
-                  placeholder="0.00"
-                  value={formData.price}
-                  onChange={handleChange}
-                  step="0.01"
-                  min="0"
-                  className="w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                  required
-                />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">{formData.currency}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Discount Price */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Discount Price</label>
-              <div className="relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">$</span>
-                </div>
-                <input
-                  type="number"
-                  name="discount_price"
-                  placeholder="0.00"
-                  value={formData.discount_price}
-                  onChange={handleChange}
-                  step="0.01"
-                  min="0"
-                  className="w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500 sm:text-sm">{formData.currency}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stock Quantity */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
-              <input
-                type="number"
-                name="stock_quantity"
-                placeholder="Available items in stock"
-                value={formData.stock_quantity}
-                onChange={handleChange}
-                min="0"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              />
-            </div>
-
-            {/* SKU */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">SKU (Stock Keeping Unit)</label>
-              <input
-                type="text"
-                name="sku"
-                placeholder="e.g. PROD-12345"
-                value={formData.sku}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              />
-            </div>
-
-            {/* Barcode */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Barcode (ISBN, UPC, etc.)</label>
-              <input
-                type="text"
-                name="barcode"
-                placeholder="e.g. 123456789012"
-                value={formData.barcode}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-              />
-            </div>
-
-            {/* Status Toggles */}
-            <div className="space-y-3">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="is_active"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="is_active" className="ml-2 block text-sm text-gray-700">
-                  Product is active
-                </label>
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="is_featured"
-                  id="is_featured"
-                  checked={formData.is_featured}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="is_featured" className="ml-2 block text-sm text-gray-700">
-                  Feature this product
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Full-width Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Full Description *</label>
-          <textarea
-            name="description"
-            placeholder="Detailed product description with features, specifications, etc."
-            value={formData.description}
-            onChange={handleChange}
-            rows="5"
-            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-            required
-          />
-        </div>
-
-        {/* Form Actions */}
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-          <button
-            type="button"
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {isSubmitting ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Processing...
-              </>
-            ) : 'Add Product'}
-          </button>
-        </div>
+        {/* === Submit Button === */}
+        <button
+          type="submit"
+          disabled={loading} // Disable button while loading
+          // Text color is white for contrast, leaving as is
+          className={`w-full flex justify-center items-center bg-indigo-600 hover:bg-indigo-700 transition duration-150 ease-in-out text-white font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed ${loading ? 'cursor-wait' : ''}`}
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Creating Product...
+            </>
+          ) : "Create Product"}
+        </button>
       </form>
     </div>
   );
