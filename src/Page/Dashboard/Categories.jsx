@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef  } from "react";
 import api from "../../js/api";
 
 const API_URL = "/product/categories/";
@@ -7,7 +7,7 @@ const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({ name: "", slug: "", image: null });
   const [editingId, setEditingId] = useState(null);
-
+  const fileInputRef = useRef();
   const fetchCategories = async () => {
     try {
       const res = await api.get(API_URL);
@@ -55,6 +55,9 @@ const Categories = () => {
         });
       }
       setFormData({ name: "", slug: "", image: null });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = null;
+      }
       fetchCategories();
     } catch (err) {
       console.error("Error saving category:", err.response?.data || err);
@@ -101,6 +104,7 @@ const Categories = () => {
           type="file"
           name="image"
           onChange={handleChange}
+          ref={fileInputRef}
           className="w-full text-gray-600"
           accept="image/*"
         />

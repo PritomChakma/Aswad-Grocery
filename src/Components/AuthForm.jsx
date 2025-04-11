@@ -12,8 +12,8 @@ const AuthForm = ({ route, method }) => {
     const [email, setEmail] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
-    const [phone, setPhone] = useState(""); // Optional field
-    const [address, setAddress] = useState(""); // Optional field
+    // const [phone, setPhone] = useState(""); // Optional field
+    // const [address, setAddress] = useState(""); // Optional field
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
@@ -46,8 +46,8 @@ const AuthForm = ({ route, method }) => {
                     email,
                     first_name: firstName,
                     last_name: lastName,
-                    phone,
-                    address,
+                    // phone,
+                    // address,
                 });
                 setSuccess("Registration successful. Please login.");
                 setTimeout(() => navigate("/login", { replace: true }), 2000);
@@ -154,7 +154,7 @@ const AuthForm = ({ route, method }) => {
                                     required
                                 />
                             </div>
-                            <div className="form-group">
+                            {/* <div className="form-group">
                                 <label htmlFor="phone">Phone Number:</label>
                                 <input
                                     type="tel"
@@ -171,7 +171,7 @@ const AuthForm = ({ route, method }) => {
                                     value={address}
                                     onChange={(e) => setAddress(e.target.value)}
                                 />
-                            </div>
+                            </div> */}
                         </>
                     )}
                     
