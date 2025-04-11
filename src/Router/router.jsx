@@ -11,6 +11,7 @@ import ProtectedLogin from "../routes/ProtectedLogin";
 import ProtectedRegister from "../routes/ProtectedRegister";
 import Categories from "../Page/Dashboard/Categories";
 import AddProduct from "../Page/Dashboard/AddProduct";
+import EditProduct from "../Page/Dashboard/EditProduct";
 
 const router = createBrowserRouter([
   {
@@ -22,8 +23,9 @@ const router = createBrowserRouter([
       { path: "/login", element: <ProtectedLogin /> },
       { path: "/register", element: <ProtectedRegister /> },
       { path: "/login/callback", element: <RedirectGoogleAuth /> },
-      { path: "/totalProducts", element: <TotalProduct /> },
+      { path: "/totalProducts/", element: <TotalProduct /> },
       { path: "/addProduct", element: <AddProduct /> },
+      { path: "/editProducts/:productId", element: <EditProduct /> },
       { path: "/order", element: <Order></Order> },
       { path: "/categories", element: <Categories></Categories> },
       { path: "/totalUser", element: <User /> },

@@ -5,19 +5,21 @@ import { useAuth } from "../authen/auth";
 import { Link } from "react-router-dom";
 
 const Navbar = () => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const admin = true;  // Assuming admin is true for demonstration purposes
   const navigate = useNavigate();
-  const { isAuthorized, logout, isAdmin } = useAuth(); // Assuming `isAdmin` determines if the user is an admin
+  const {isAuthorized, logout, user} = useAuth(); 
+
+ 
 
   const handleLogout = () => {
     logout();
     navigate('/');
   };
 
+
   return (
     <div className="navbar bg-[#1b8057] shadow-md sticky top-0 z-50 px-6 py-4 flex justify-between items-center">
       {/* Logo */}
+    
       <div className="text-3xl font-bold text-white">
         <a href="/" className="hover:text-gray-200 transition duration-300">
           Aswad Grocery
@@ -28,23 +30,23 @@ const Navbar = () => {
       <div className="lg:flex items-center space-x-8 hidden">
         <ul className="lg:flex gap-8 text-white font-semibold">
           <li>
-            <a href="/" className="hover:text-gray-200 transition duration-300">Home</a>
+            <a href="/" className="hover:text-gray-200 transition duration-300"></a>
           </li>
           <li>
             <a href="/shop" className="hover:text-gray-200 transition duration-300">Shop</a>
           </li>
           <li>
-            <a href="/about" className="hover:text-gray-200 transition duration-300">About Us</a>
+            <a href="/about" className="hover:text-gray-200 transition duration-300">About</a>
           </li>
           <li>
             <a href="/contact" className="hover:text-gray-200 transition duration-300">Contact</a>
           </li>
           {/* Admin Dashboard Link */}
-          {isAdmin && (
+  
             <li>
               <Link to="/admin/dashboard" className="hover:text-gray-200 transition duration-300">Admin Dashboard</Link>
             </li>
-          )}
+
         </ul>
       </div>
 
@@ -79,12 +81,22 @@ const Navbar = () => {
             </div>
           </div>
         </div>
-
+        {isAuthorized ? (
+        <div>Hello, {user?.first_name} </div>): null}
         {/* User Icon */}
         <div className="relative">
+            
           <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
-              <FaUserCircle className="text-3xl text-white cursor-pointer" />
+          <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
+            {isAuthorized && user?.profile_picture ? (
+                <img
+                src={user.profile_picture}
+                alt="Profile"
+                className="w-10 h-10 rounded-full object-cover"
+                />
+            ) : (
+                <FaUserCircle className="text-3xl text-white cursor-pointer" />
+            )}
             </div>
             <ul
               tabIndex={0}
@@ -102,14 +114,17 @@ const Navbar = () => {
                 </Link>
               </li>
               {/* If the user is an admin, show the Admin Dashboard link */}
-              {admin && (
+              {isAuthorized && user?.is_staff ? (
                 <li>
-                  <Link to="/dashboard" className="hover:bg-[#1b8057] hover:text-white p-2 flex items-center">
-                    <FaUserCircle className="mr-2 text-xl" />
-                    Admin Dashboard
-                  </Link>
-                </li>
-              )}
+                <Link to="/dashboard" className="hover:bg-[#1b8057] hover:text-white p-2 flex items-center">
+                  <FaUserCircle className="mr-2 text-xl" />
+                  Admin Dashboard
+                </Link>
+              </li>
+            ) : (
+                null
+            )}
+                
               {isAuthorized ? (
                 <li>
                   <button

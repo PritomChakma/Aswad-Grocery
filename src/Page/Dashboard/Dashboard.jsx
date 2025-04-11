@@ -3,30 +3,59 @@ import { FaBox, FaClipboardList, FaShoppingCart, FaUsers } from "react-icons/fa"
 import { Link } from "react-router-dom";
 import api from "../../js/api";
 
-const API_URL = "/product/categories/";
+const CATEGORY_URL = "/product/categories/";
+const PRODUCT_URL = "/product/products/";
+const USERS_URL = "/api/users/";
+
 
 const Dashboard = () => {
   const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [users, setUsers] = useState([]);
 
   const fetchCategories = async () => {
     try {
-      const res = await api.get(API_URL);
+      const res = await api.get(CATEGORY_URL);
       setCategories(res.data);
     } catch (err) {
       console.error("Error fetching categories:", err);
     }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const res = await api.get(PRODUCT_URL);
+      setProducts(res.data);
+    } catch (err) {
+      console.error("Error fetching products:", err);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await api.get(USERS_URL);
+      setUsers(res.data);
+    } catch (err) {
+      console.error("Error fetching users:", err);
+    }
+  };
+
   useEffect(() => {
     fetchCategories();
-  }, []); // ✅ This will call fetchCategories once when component loads
+    fetchProducts(); 
+    fetchUsers(); 
+    console.log("Categories:", categories.length); // Log categories to check if they are fetched correctly
+    console.log("Products:", products.length); // Log products to check if they are fetched correctly
+  }, []); 
 
-  const totalCategories = categories.length; // ✅ Save it in a variable
+  const totalCategories = categories.length; 
+  const totalProducts = products.length; 
+  const totalUsers = users.length; 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
       {/* Dashboard Header */}
-      <div className="bg-[#1b8057] text-white text-4xl font-bold py-8 shadow-md">
+      <div className="bg-[#1b8050] text-white text-4xl font-bold py-8 shadow-md">
         <h1 className="text-center">Admin Dashboard</h1>
       </div>
 
@@ -39,7 +68,7 @@ const Dashboard = () => {
             {
               icon: <FaBox className="text-5xl text-[#1b8057]" />,
               title: "Total Products",
-              count: 120,
+              count: totalProducts,
               link: "/totalProducts",
               linkText: "View Products",
             },
@@ -53,14 +82,14 @@ const Dashboard = () => {
             {
               icon: <FaUsers className="text-5xl text-[#1b8057]" />,
               title: "Total Users",
-              count: 450,
+              count: totalUsers,
               link: "/totalUser",
               linkText: "View Users",
             },
             {
               icon: <FaClipboardList className="text-5xl text-[#1b8057]" />,
               title: "Total Categories",
-              count: totalCategories, // ✅ Use the variable here (NOT inside {})
+              count: totalCategories, 
               link: "/categories",
               linkText: "View Categories",
             },

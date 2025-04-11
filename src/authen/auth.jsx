@@ -19,43 +19,55 @@ export const AuthProvider = ({ children }) => {
 
     // Function to check and validate token
     const checkAuth = async () => {
-        const token = localStorage.getItem(ACCESS_TOKEN);
+        // refreshToken();
+        let token = localStorage.getItem(ACCESS_TOKEN);
         const googleAccessToken = localStorage.getItem(GOOGLE_ACCESS_TOKEN);
-
+    
+        let isGoogleLogin = false;
+    
+        if (!token && googleAccessToken) {
+            token = googleAccessToken;
+            isGoogleLogin = true;
+        }
+        
+    
+        console.log("Google Access Token: ", googleAccessToken);
+        console.log("Access Token: ", token);
+    
         if (token) {
             try {
-                const decoded = jwtDecode(token);
-                const tokenExpiration = decoded.exp;
-                const now = Date.now() / 1000;
-
-                if (tokenExpiration < now) {
-                    // Token expired, try to refresh
-                    await refreshToken();
-                } else {
-                    // Token is valid
+                if (isGoogleLogin) {
+                    // validate token and get user profile
+                    const res = await api.get('/api/auth/user/', {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    });
+    
                     setIsAuthorized(true);
-                    setUser(decoded);
+                    setUser(res.data);
+                } else {
+                    const decoded = jwtDecode(token);
+                    const tokenExpiration = decoded.exp;
+                    const now = Date.now() / 1000;
+    
+                    if (tokenExpiration < now) {
+                        await refreshToken();
+                    } else {
+                        setIsAuthorized(true);
+                        const userResponse = await api.get("/api/auth/user/");
+                        setUser(userResponse.data);
+                    }
                 }
             } catch (error) {
-                // Invalid token
-                logout();
-            }
-        } else if (googleAccessToken) {
-            try {
-                const isValid = await validateGoogleToken(googleAccessToken);
-                if (isValid) {
-                    setIsAuthorized(true);
-                } else {
-                    logout();
-                }
-            } catch (error) {
+                console.error('checkAuth failed:', error);
                 logout();
             }
         } else {
             logout();
         }
     };
-
+    
     // Refresh token method
     const refreshToken = async () => {
         const refreshToken = localStorage.getItem(REFRESH_TOKEN);
@@ -68,7 +80,8 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem(ACCESS_TOKEN, res.data.access);
                 const decoded = jwtDecode(res.data.access);
                 setIsAuthorized(true);
-                setUser(decoded);
+                const userResponse = await api.get("/api/auth/user/");
+                setUser(userResponse.data);
                 return true;
             }
         } catch (error) {
@@ -92,35 +105,30 @@ export const AuthProvider = ({ children }) => {
     };
 
     // Login method
-    const login = async (credentials) => {
+    const login = async ({ username, password }) => {
         try {
-            let res;
-            if (credentials.google_token) {
-                // Google login
-                res = await api.post('/api/google/login/', { 
-                    access_token: credentials.google_token 
-                });
-            } else {
-                // Regular login
-                res = await api.post('/api/token/', credentials);
-            }
-    
-            localStorage.setItem(ACCESS_TOKEN, res.data.access);
+          const response = await api.post("/api/token/", { username, password });
+          const { access, refresh } = response.data;
+      
+          // Save tokens
+          localStorage.setItem(ACCESS_TOKEN, access);
+          localStorage.setItem(REFRESH_TOKEN, refresh);
+          api.defaults.headers.Authorization = `Bearer ${access}`;
             
-            // For regular login, also store refresh token
-            if (res.data.refresh) {
-                localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
-            }
-    
-            // Trigger auth check
-            await checkAuth();
-            return true;
-        } catch (error) {
-            console.error('Login failed', error);
-            return false;
-        }
-    };
 
+          // 🔥 Fetch user info
+          const userResponse = await api.get("/api/auth/user/"); 
+          const user = userResponse.data;
+      
+          setIsAuthorized(true);
+          setUser(user);
+          return true;
+        } catch (error) {
+          console.error("Login error:", error);
+          return false;
+        }
+      };
+      
     // Logout method
     const logout = () => {
         localStorage.removeItem(ACCESS_TOKEN);
@@ -147,7 +155,10 @@ export const AuthProvider = ({ children }) => {
             user, 
             login, 
             logout, 
-            refreshToken 
+            refreshToken ,
+            checkAuth,
+            setIsAuthorized,  
+            setUser   
         }}>
             {children}
         </AuthContext.Provider>
