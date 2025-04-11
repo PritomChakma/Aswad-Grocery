@@ -5,7 +5,7 @@ const API_URL = "/product/categories/";
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
-  const [formData, setFormData] = useState({ name: "", image: null });
+  const [formData, setFormData] = useState({ name: "", slug: "", image: null });
   const [editingId, setEditingId] = useState(null);
 
   const fetchCategories = async () => {
@@ -22,10 +22,17 @@ const Categories = () => {
   }, []);
 
   const handleChange = (e) => {
-    if (e.target.name === "image") {
-      setFormData({ ...formData, image: e.target.files[0] });
+    const { name, value, files } = e.target;
+    if (name === "image") {
+      setFormData({ ...formData, image: files[0] });
+    } else if (name === "name") {
+      const slugified = value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "");
+      setFormData({ ...formData, name: value, slug: slugified });
     } else {
-      setFormData({ ...formData, [e.target.name]: e.target.value });
+      setFormData({ ...formData, [name]: value });
     }
   };
 
@@ -33,6 +40,7 @@ const Categories = () => {
     e.preventDefault();
     const form = new FormData();
     form.append("name", formData.name);
+    form.append("slug", formData.slug);
     if (formData.image) form.append("image", formData.image);
 
     try {
@@ -46,7 +54,7 @@ const Categories = () => {
           headers: { "Content-Type": "multipart/form-data" },
         });
       }
-      setFormData({ name: "", image: null });
+      setFormData({ name: "", slug: "", image: null });
       fetchCategories();
     } catch (err) {
       console.error("Error saving category:", err.response?.data || err);
@@ -54,7 +62,7 @@ const Categories = () => {
   };
 
   const handleEdit = (category) => {
-    setFormData({ name: category.name, image: null });
+    setFormData({ name: category.name, slug: category.slug || "", image: null });
     setEditingId(category.id);
   };
 
@@ -80,6 +88,14 @@ const Categories = () => {
           onChange={handleChange}
           className="border border-gray-300 w-full p-3 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
+        />
+        <input
+          type="text"
+          name="slug"
+          placeholder="Slug"
+          value={formData.slug}
+          readOnly
+          className="border border-gray-300 w-full p-3 rounded bg-gray-100 cursor-not-allowed"
         />
         <input
           type="file"
@@ -110,7 +126,10 @@ const Categories = () => {
                   className="w-14 h-14 object-cover rounded-full border"
                 />
               )}
-              <span className="text-lg font-medium text-gray-700">{category.name}</span>
+              <div>
+                <span className="text-lg font-medium text-gray-700 block">{category.name}</span>
+                <span className="text-sm text-gray-500">{category.slug}</span>
+              </div>
             </div>
             <div className="flex gap-2">
               <button

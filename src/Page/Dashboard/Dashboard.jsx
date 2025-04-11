@@ -44,8 +44,8 @@ const Dashboard = () => {
     fetchCategories();
     fetchProducts(); 
     fetchUsers(); 
-    console.log("Categories:", categories.length); // Log categories to check if they are fetched correctly
-    console.log("Products:", products.length); // Log products to check if they are fetched correctly
+    console.log("Categories:", categories.length);
+    console.log("Products:", products.length); 
   }, []); 
 
   const totalCategories = categories.length; 
