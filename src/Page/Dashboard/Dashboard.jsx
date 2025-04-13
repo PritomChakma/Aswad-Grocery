@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react"; // ✅ You must import useState and useEffect
+import React, { useState, useEffect } from "react";
 import { FaBox, FaClipboardList, FaShoppingCart, FaUsers } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import api from "../../js/api";
 
 const CATEGORY_URL = "/product/categories/";
 const PRODUCT_URL = "/product/products/";
+const ORDER_URL = "/orders/";
 const USERS_URL = "/api/users/";
 
 
@@ -12,6 +13,7 @@ const Dashboard = () => {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [users, setUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
 
   const fetchCategories = async () => {
     try {
@@ -21,6 +23,17 @@ const Dashboard = () => {
       console.error("Error fetching categories:", err);
     }
   };
+
+  const fetchOrders = async () => {
+    try {
+      const res = await api.get(ORDER_URL);
+      console.log("Orders:", res.data); 
+      setOrders(res.data);
+    } catch (err) {
+      console.error("Error fetching orders:", err);
+    }
+  };
+
 
   const fetchProducts = async () => {
     try {
@@ -44,13 +57,13 @@ const Dashboard = () => {
     fetchCategories();
     fetchProducts(); 
     fetchUsers(); 
-    console.log("Categories:", categories.length);
-    console.log("Products:", products.length); 
+    fetchOrders(); 
   }, []); 
 
   const totalCategories = categories.length; 
   const totalProducts = products.length; 
   const totalUsers = users.length; 
+  const totalOrders = orders.length; 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200">
@@ -75,15 +88,15 @@ const Dashboard = () => {
             {
               icon: <FaShoppingCart className="text-5xl text-[#1b8057]" />,
               title: "Total Orders",
-              count: 300,
-              link: "/admin/orders",
+              count: totalOrders,
+              link: "/orders",
               linkText: "View Orders",
             },
             {
               icon: <FaUsers className="text-5xl text-[#1b8057]" />,
               title: "Total Users",
               count: totalUsers,
-              link: "/totalUser",
+              link: "/totalusers",
               linkText: "View Users",
             },
             {
