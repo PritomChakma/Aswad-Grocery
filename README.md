@@ -7,5 +7,7 @@ TODOS:
 
 Progress:
     - TotalOrders & TotalUsers in admin
+    - integrate Delete Operation on total user Page
 
 Added new module 'date-fns'
+
