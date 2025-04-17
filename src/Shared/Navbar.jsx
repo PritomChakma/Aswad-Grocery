@@ -30,7 +30,7 @@ const Navbar = () => {
       <div className="lg:flex items-center space-x-8 hidden">
         <ul className="lg:flex gap-8 text-white font-semibold">
           <li>
-            <a href="/" className="hover:text-gray-200 transition duration-300"></a>
+            <a href="/" className="hover:text-gray-200 transition duration-300">Home</a>
           </li>
           <li>
             <a href="/shop" className="hover:text-gray-200 transition duration-300">Shop</a>
@@ -41,11 +41,14 @@ const Navbar = () => {
           <li>
             <a href="/contact" className="hover:text-gray-200 transition duration-300">Contact</a>
           </li>
+<<<<<<< Updated upstream
           {/* Admin Dashboard Link */}
   
             {/* <li>
               <Link to="/admin/dashboard" className="hover:text-gray-200 transition duration-300">Admin Dashboard</Link>
             </li> */}
+=======
+>>>>>>> Stashed changes
 
         </ul>
       </div>

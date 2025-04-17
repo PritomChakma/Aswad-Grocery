@@ -15,6 +15,16 @@ const Dashboard = () => {
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
 
+
+  const fetchdata = async () => {
+    try {
+      const res = await api.get("/");
+      console.log("data:", res.data);
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
+
   const fetchCategories = async () => {
     try {
       const res = await api.get(CATEGORY_URL);
@@ -58,6 +68,7 @@ const Dashboard = () => {
     fetchProducts(); 
     fetchUsers(); 
     fetchOrders(); 
+    fetchdata();
   }, []); 
 
   const totalCategories = categories.length; 
